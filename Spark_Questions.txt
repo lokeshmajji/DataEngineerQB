@@ -123,20 +123,20 @@ results.map(attributes => "Name: " + attributes(0)).show()
 Parquet:
     spark.read.parquet("/data/people.parquet")
     df.write.parquet("/output/people/parquet")
-
+    peopleDF.select("name", "age").write.format("parquet").save("namesAndAges.parquet")
+    
 JSON: 
     val peopleDF = spark.read.format("json").load("examples/src/main/resources/people.json")
-    peopleDF.select("name", "age").write.format("parquet").save("namesAndAges.parquet")
 CSV :
-    val peopleDFCsv = spark.read.format("csv").option("sep", ";").option("inferSchema", "true").option("header", "true").load("examples/src/main/resources/people.csv")
+    val peopleDFCsv = spark.read.format("csv").option("sep", ",").option("inferSchema", "true").option("header", "true").load("examples/src/main/resources/people.csv")
 
 Direct Files:
     val sqlDF = spark.sql("SELECT * FROM parquet.`examples/src/main/resources/users.parquet`")
 
 Save Modes:
-    SaveModew.ErrorIfExists, SaveMode.Append,SaveMode.OverWrite,SaveMode.Ignore
+    SaveMode.ErrorIfExists, SaveMode.Append,SaveMode.OverWrite,SaveMode.Ignore
 
-Bucketing, Sorting and Partitioning
+Bucketing, Sorting and Partitioning:
     peopleDF.write.bucketBy(42, "name").sortBy("age").saveAsTable("people_bucketed")
     usersDF.write.partitionBy("favorite_color").format("parquet").save("namesPartByColor.parquet")
 Hive:
@@ -151,22 +151,38 @@ Hive:
     spark.sqlContext.setConf("hive.exec.dynamic.partition", "true")
     spark.sqlContext.setConf("hive.exec.dynamic.partition.mode", "nonstrict")
     df.write.partitionBy("key").format("hive").saveAsTable("hive_part_tbl")
+    
     sql("SELECT * FROM hive_part_tbl").show()
 
  JDBC:
      bin/spark-shell --driver-class-path postgresql-9.4.1207.jar --jars postgresql-9.4.1207.jar
-     val jdbcDF = spark.read.format("jdbc").option("url", "jdbc:postgresql:dbserver")
-        .option("dbtable", "schema.tablename").option("user", "username").option("password", "password").load()
+     
+     val jdbcDF = spark.read.format("jdbc")
+        .option("url", "jdbc:postgresql:dbserver")
+        .option("dbtable", "schema.tablename")
+        .option("user", "username")
+        .option("password", "password")
+        .load()
+        
      val connectionProperties = new Properties()
      connectionProperties.put("user", "username")
      connectionProperties.put("password", "password")
+     
      val jdbcDF2 = spark.read.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+     
      // Specifying the custom data types of the read schema
-    connectionProperties.put("customSchema", "id DECIMAL(38, 0), name STRING")
-    val jdbcDF3 = spark.read.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+        connectionProperties.put("customSchema", "id DECIMAL(38, 0), name STRING")
+        val jdbcDF3 = spark.read.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+    
     // Saving data to a JDBC source
-    jdbcDF.write.format("jdbc").option("url", "jdbc:postgresql:dbserver").option("dbtable", "schema.tablename")
-        .option("user", "username").option("password", "password").save()
-    jdbcDF2.write.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+        jdbcDF.write.format("jdbc")
+        .option("url", "jdbc:postgresql:dbserver")
+        .option("dbtable", "schema.tablename")
+        .option("user", "username")
+        .option("password", "password")
+        .save()
+        jdbcDF2.write.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
     // Specifying create table column data types on write
-    jdbcDF.write.option("createTableColumnTypes", "name CHAR(64), comments VARCHAR(1024)").jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+        jdbcDF.write
+            .option("createTableColumnTypes", "name CHAR(64), comments VARCHAR(1024)")
+            .jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
