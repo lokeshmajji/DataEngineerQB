@@ -1,24 +1,25 @@
 # Spark Questions
 
-1) Spark and Scala Versions
+## Spark and Scala Versions ?
     Spark 2.3.3 - Scala 2.11.x - Hadoop 2.7 - Java 8
     Spark 1.6.0 - Scala 2.10.x - Hadoop 2.3 - Java 7+
 
-2) Hive Versions
+## Hive Versions ?
     2017 - 2.3.0 - only supports Hadoop 2.x.y
     2016 - 2.0.0 - Supports Hadoop 1.x.y, 2.x.y
     2015 - 1.2.1 - Supports Hadoop 1.x.y, 2.x.y
     
-Q) What is a RDD?
-A) DD is an immutable distributed collection of elements of your data, partitioned across nodes in your cluster that can be operated in parallel with a low-level API that offers transformations and actions.
+## What is a RDD?
+    DD is an immutable distributed collection of elements of your data, partitioned across nodes in your cluster that can be operated in parallel with a low-level API that offers transformations and actions.
+## When you use RDD?
     you want low-level transformation and actions and control on your dataset;
     your data is unstructured, such as media streams or streams of text;
     you want to manipulate your data with functional programming constructs than domain specific expressions;
-Q) What is a DataFrame?
+## What is a DataFrame?
     a DataFrame is an immutable distributed collection of data. Unlike an RDD, data is organized into named columns, like a table in a relational database. Designed to make large data sets processing even easier, DataFrame allows developers to impose a structure onto a distributed collection of data, allowing higher-level abstraction;
     DataFrame = DataSet[Row]
     
-Q) What is a Dataset?
+## What is a Dataset?
     * Starting in Spark 2.0, Dataset takes on two distinct APIs characteristics: a strongly-typed API and an untyped API, as shown in the table below. Conceptually, consider DataFrame as an alias for a collection of generic objects Dataset[Row], where a Row is a generic untyped JVM object. Dataset, by contrast, is a collection of strongly-typed JVM objects, dictated by a case class you define in Scala or a class in Java. DataSet[T] // T can be a Case Class in Scala or a class in Java
     
     * First, because DataFrame and Dataset APIs are built on top of the Spark SQL engine, it uses Catalyst to generate an optimized logical and physical query plan. Across R, Java, Scala, or Python DataFrame/Dataset APIs, all relation type queries undergo the same code optimizer, providing the space and speed efficiency. Whereas the Dataset[T] typed API is optimized for data engineering tasks, the untyped Dataset[Row] (an alias of DataFrame) is even faster and suitable for interactive analysis.
@@ -32,7 +33,7 @@ Q) What is a Dataset?
         val ds = spark.read.json(“/databricks-public-datasets/data/iot/iot_devices.json”).as[DeviceIoTData]
         
 
-3) Create DataFrames
+## Create DataFrames
 
     import org.apache.spark.sql.SparkSession
     val spark = SparkSession
@@ -64,7 +65,7 @@ Q) What is a Dataset?
     spark.sql("SELECT * FROM global_temp.people").show()
 
 
-4) Creating Datasets
+## Creating Datasets
     case class Person(name: String, age: Long)
     // Encoders are created for case classes
     val caseClassDS = Seq(Person("Andy", 32)).toDS()
@@ -80,7 +81,7 @@ Q) What is a Dataset?
     peopleDS.show()
 
 
-5) Inferring the Schema Using Reflection
+## Inferring the Schema Using Reflection
     // For implicit conversions from RDDs to DataFrames
         import spark.implicits._
     // Create an RDD of Person objects from a text file, convert it to a Dataframe
@@ -105,7 +106,7 @@ Q) What is a Dataset?
         teenagersDF.map(teenager => teenager.getValuesMap[Any](List("name", "age"))).collect()
     // Array(Map("name" -> "Justin", "age" -> 19))
 
-6) Programmatically Specifying the Schema
+## Programmatically Specifying the Schema
 
 import org.apache.spark.sql.types._
 val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
@@ -118,7 +119,7 @@ peopleDF.createOrReplaceTempView("people")
 val results = spark.sql("SELECT name FROM people")
 results.map(attributes => "Name: " + attributes(0)).show()
 
-7) Read/Write Different Files in Spark
+## Read/Write Different Files in Spark
 
 Parquet:
     spark.read.parquet("/data/people.parquet")
