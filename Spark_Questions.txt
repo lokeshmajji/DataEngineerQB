@@ -1,1 +1,149 @@
+# Spark Questions
 
+1) Spark and Scala Versions
+    Spark 2.3.3 - Scala 2.11.x - Hadoop 2.7 - Java 8
+    Spark 1.6.0 - Scala 2.10.x - Hadoop 2.3 - Java 7+
+
+2) Hive Versions
+    2017 - 2.3.0 - only supports Hadoop 2.x.y
+    2016 - 2.0.0 - Supports Hadoop 1.x.y, 2.x.y
+    2015 - 1.2.1 - Supports Hadoop 1.x.y, 2.x.y
+
+3) Create DataFrames
+
+    import org.apache.spark.sql.SparkSession
+    val spark = SparkSession
+        .builder()
+        .appName("Spark SQL basic example")
+        .config("spark.some.config.option", "some-value")
+        .getOrCreate()
+    // For implicit conversions like converting RDDs to DataFrames
+    import spark.implicits._
+
+    val df = spark.read.json("examples/src/main/resources/people.json")
+    df.show()
+    df.printSchema()
+    df.select("name").show()
+    df.select($"name", $"age" + 1).show()
+    df.filter($"age" > 21).show()
+    df.groupBy("age").count().show()
+
+    // Register the DataFrame as a SQL temporary view
+    df.createOrReplaceTempView("people")
+
+    val sqlDF = spark.sql("SELECT * FROM people")
+    sqlDF.show()
+
+    // Register the DataFrame as a global temporary view
+    df.createGlobalTempView("people")
+
+    // Global temporary view is tied to a system preserved database `global_temp`
+    spark.sql("SELECT * FROM global_temp.people").show()
+
+
+4) Creating Datasets
+    case class Person(name: String, age: Long)
+    // Encoders are created for case classes
+    val caseClassDS = Seq(Person("Andy", 32)).toDS()
+    caseClassDS.show()
+    
+    // Encoders for most common types are automatically provided by importing spark.implicits._
+    val primitiveDS = Seq(1, 2, 3).toDS()
+    primitiveDS.map(_ + 1).collect()
+
+    // DataFrames can be converted to a Dataset by providing a class. Mapping will be done by name
+    val path = "examples/src/main/resources/people.json"
+    val peopleDS = spark.read.json(path).as[Person]
+    peopleDS.show()
+
+
+5) Inferring the Schema Using Reflection
+    // For implicit conversions from RDDs to DataFrames
+        import spark.implicits._
+    // Create an RDD of Person objects from a text file, convert it to a Dataframe
+        val peopleDF = spark.sparkContext.textFile("examples/src/main/resources/people.txt").map(_.split(","))
+                .map(attributes => Person(attributes(0), attributes(1).trim.toInt))
+                .toDF()
+        
+        peopleDF.createOrReplaceTempView("people")
+        val teenagersDF = spark.sql("SELECT name, age FROM people WHERE age BETWEEN 13 AND 19")
+
+    // The columns of a row in the result can be accessed by field index
+            teenagersDF.map(teenager => "Name: " + teenager(0)).show()
+    // or by field name
+            teenagersDF.map(teenager => "Name: " + teenager.getAs[String]("name")).show()
+    
+    // No pre-defined encoders for Dataset[Map[K,V]], define explicitly
+    implicit val mapEncoder = org.apache.spark.sql.Encoders.kryo[Map[String, Any]]
+    // Primitive types and case classes can be also defined as
+    // implicit val stringIntMapEncoder: Encoder[Map[String, Any]] = ExpressionEncoder()
+
+    // row.getValuesMap[T] retrieves multiple columns at once into a Map[String, T]
+        teenagersDF.map(teenager => teenager.getValuesMap[Any](List("name", "age"))).collect()
+    // Array(Map("name" -> "Justin", "age" -> 19))
+
+6) Programmatically Specifying the Schema
+
+import org.apache.spark.sql.types._
+val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
+val schemaString = "name age"
+val fields = schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = true))
+val schema = StructType(fields)
+val rowRDD = peopleRDD.map(_.split(",")).map(attributes => Row(attributes(0), attributes(1).trim))
+val peopleDF = spark.createDataFrame(rowRDD, schema)
+peopleDF.createOrReplaceTempView("people")
+val results = spark.sql("SELECT name FROM people")
+results.map(attributes => "Name: " + attributes(0)).show()
+
+7) Read/Write Different Files in Spark
+
+Parquet:
+    spark.read.parquet("/data/people.parquet")
+    df.write.parquet("/output/people/parquet")
+
+JSON: 
+    val peopleDF = spark.read.format("json").load("examples/src/main/resources/people.json")
+    peopleDF.select("name", "age").write.format("parquet").save("namesAndAges.parquet")
+CSV :
+    val peopleDFCsv = spark.read.format("csv").option("sep", ";").option("inferSchema", "true").option("header", "true").load("examples/src/main/resources/people.csv")
+
+Direct Files:
+    val sqlDF = spark.sql("SELECT * FROM parquet.`examples/src/main/resources/users.parquet`")
+
+Save Modes:
+    SaveModew.ErrorIfExists, SaveMode.Append,SaveMode.OverWrite,SaveMode.Ignore
+
+Bucketing, Sorting and Partitioning
+    peopleDF.write.bucketBy(42, "name").sortBy("age").saveAsTable("people_bucketed")
+    usersDF.write.partitionBy("favorite_color").format("parquet").save("namesPartByColor.parquet")
+Hive:
+    val spark = SparkSession.builder().appName("Spark Hive Example").config("spark.sql.warehouse.dir", warehouseLocation).enableHiveSupport().getOrCreate()
+    import spark.implicits._
+    import spark.sql    
+    sql("CREATE TABLE IF NOT EXISTS src (key INT, value STRING) USING hive")
+    sql("LOAD DATA LOCAL INPATH 'examples/src/main/resources/kv1.txt' INTO TABLE src")
+    // Queries are expressed in HiveQL
+    sql("SELECT * FROM src").show()
+
+    spark.sqlContext.setConf("hive.exec.dynamic.partition", "true")
+    spark.sqlContext.setConf("hive.exec.dynamic.partition.mode", "nonstrict")
+    df.write.partitionBy("key").format("hive").saveAsTable("hive_part_tbl")
+    sql("SELECT * FROM hive_part_tbl").show()
+
+ JDBC:
+     bin/spark-shell --driver-class-path postgresql-9.4.1207.jar --jars postgresql-9.4.1207.jar
+     val jdbcDF = spark.read.format("jdbc").option("url", "jdbc:postgresql:dbserver")
+        .option("dbtable", "schema.tablename").option("user", "username").option("password", "password").load()
+     val connectionProperties = new Properties()
+     connectionProperties.put("user", "username")
+     connectionProperties.put("password", "password")
+     val jdbcDF2 = spark.read.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+     // Specifying the custom data types of the read schema
+    connectionProperties.put("customSchema", "id DECIMAL(38, 0), name STRING")
+    val jdbcDF3 = spark.read.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+    // Saving data to a JDBC source
+    jdbcDF.write.format("jdbc").option("url", "jdbc:postgresql:dbserver").option("dbtable", "schema.tablename")
+        .option("user", "username").option("password", "password").save()
+    jdbcDF2.write.jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+    // Specifying create table column data types on write
+    jdbcDF.write.option("createTableColumnTypes", "name CHAR(64), comments VARCHAR(1024)").jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
