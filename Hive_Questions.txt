@@ -55,6 +55,12 @@ Now, as we know, Hadoop performance degrades when we use lots of small files.So,
         INSERT OVERWRITE TABLE sample SELECT * FROM temp_table;
 
 
+6) Transer data to HDFS
+        hdfs dfs -put /home/cloudera/Desktop/Loki/employees/employees.json /user/cloudera/employees/
+        hdfs dfs -put /home/cloudera/Desktop/Loki/employees/salaries.json /user/cloudera/employees/
+        
+        val sal = spark.read.json("/user/cloudera/employees/salaries.json")
+        create table emp_sal(emp_no string,from_date string,salary int,to_date string) stored as parquetfile LOCATION '/user/cloudera/out/emp/parquet';
 
 
 
