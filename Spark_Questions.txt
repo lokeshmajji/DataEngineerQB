@@ -8,6 +8,23 @@
     2017 - 2.3.0 - only supports Hadoop 2.x.y
     2016 - 2.0.0 - Supports Hadoop 1.x.y, 2.x.y
     2015 - 1.2.1 - Supports Hadoop 1.x.y, 2.x.y
+    
+Q) What is a RDD?
+A) DD is an immutable distributed collection of elements of your data, partitioned across nodes in your cluster that can be operated in parallel with a low-level API that offers transformations and actions.
+    you want low-level transformation and actions and control on your dataset;
+    your data is unstructured, such as media streams or streams of text;
+    you want to manipulate your data with functional programming constructs than domain specific expressions;
+Q) What is a DataFrame?
+    a DataFrame is an immutable distributed collection of data. Unlike an RDD, data is organized into named columns, like a table in a relational database. Designed to make large data sets processing even easier, DataFrame allows developers to impose a structure onto a distributed collection of data, allowing higher-level abstraction;
+    DataFrame = DataSet[Row]
+    
+Q) What is a Dataset?
+        Starting in Spark 2.0, Dataset takes on two distinct APIs characteristics: a strongly-typed API and an untyped API, as shown in the table below. Conceptually, consider DataFrame as an alias for a collection of generic objects Dataset[Row], where a Row is a generic untyped JVM object. Dataset, by contrast, is a collection of strongly-typed JVM objects, dictated by a case class you define in Scala or a class in Java.
+           DataSet[T] // T can be a Case Class in Scala or a class in Java
+       * Syntax and Analysis errors can be found compile time
+      {"device_id": 198164, "device_name": "sensor-pad-198164owomcJZ", "ip": "80.55.20.25", "cca2": "PL", "cca3": "POL", "cn": "Poland", "latitude": 53.080000, "longitude": 18.620000, "scale": "Celsius", "temp": 21, "humidity": 65, "battery_level": 8, "c02_level": 1408, "lcd": "red", "timestamp" :1458081226051}
+    case class DeviceIoTData (battery_level: Long, c02_level: Long, cca2: String, cca3: String, cn: String, device_id: Long, device_name: String, humidity: Long, ip: String, latitude: Double, lcd: String, longitude: Double, scale:String, temp: Long, timestamp: Long)
+    val ds = spark.read.json(“/databricks-public-datasets/data/iot/iot_devices.json”).as[DeviceIoTData]
 
 3) Create DataFrames
 
