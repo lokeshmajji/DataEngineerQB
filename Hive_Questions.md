@@ -105,12 +105,12 @@ On the contrary, in case of an external table, Hive just deletes the metadata in
                 CREATE VIEW reconcile_view AS
                 SELECT t1.* FROM
                 (SELECT * FROM base_table
-                UNION ALL
+                        UNION ALL
                 SELECT * from incremental_table) t1
                 JOIN
                 (SELECT id, max(modified_date) max_modified FROM
                         (SELECT * FROM base_table
-                        UNION ALL
+                                UNION ALL
                         SELECT * from incremental_table)
                 GROUP BY id) t2
                 ON t1.id = t2.id AND t1.modified_date = t2.max_modified;

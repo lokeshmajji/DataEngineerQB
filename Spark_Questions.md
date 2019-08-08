@@ -10,7 +10,7 @@
     2015 - 1.2.1 - Supports Hadoop 1.x.y, 2.x.y
     
 ## What is a RDD?
-    DD is an immutable distributed collection of elements of your data, partitioned across nodes in your cluster that can be operated in parallel with a low-level API that offers transformations and actions.
+    RDD is an immutable distributed collection of elements of your data, partitioned across nodes in your cluster that can be operated in parallel with a low-level API that offers transformations and actions.
 ## When you use RDD?
     you want low-level transformation and actions and control on your dataset;
     your data is unstructured, such as media streams or streams of text;
@@ -107,17 +107,16 @@
     // Array(Map("name" -> "Justin", "age" -> 19))
 
 ## Programmatically Specifying the Schema
-
-import org.apache.spark.sql.types._
-val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
-val schemaString = "name age"
-val fields = schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = true))
-val schema = StructType(fields)
-val rowRDD = peopleRDD.map(_.split(",")).map(attributes => Row(attributes(0), attributes(1).trim))
-val peopleDF = spark.createDataFrame(rowRDD, schema)
-peopleDF.createOrReplaceTempView("people")
-val results = spark.sql("SELECT name FROM people")
-results.map(attributes => "Name: " + attributes(0)).show()
+    import org.apache.spark.sql.types._
+    val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
+    val schemaString = "name age"
+    val fields = schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = true))
+    val schema = StructType(fields)
+    val rowRDD = peopleRDD.map(_.split(",")).map(attributes => Row(attributes(0), attributes(1).trim))
+    val peopleDF = spark.createDataFrame(rowRDD, schema)
+    peopleDF.createOrReplaceTempView("people")
+    val results = spark.sql("SELECT name FROM people")
+    results.map(attributes => "Name: " + attributes(0)).show()
 
 ## Read/Write Different Files in Spark
 
@@ -192,4 +191,56 @@ Hive:
     val rdd = sc.wholeTextFiles("/user/cloudera/dataset/dataset")
     rdd.map(x => (x._1,x._2.split("\\s+").toList.count(y => y.contains("Hadoop")))).collect.foreach(println)
 
-## 
+## Using Create DataFrame
+    Option 0:
+        val df = spark.sparkContext.parallelize(Seq("name1","name2")).toDF()
+    Option 1: 
+        val mylist = Seq("name1","name2")
+        mylist.toDF() or mylist.toDS()
+    Option 2:
+        val mylist = Seq(Row("name1"),Row("name2"))
+        val rdd = spark.sparkContext.parallelize(mylist)
+        val schema = StructType(Array(StructField("name",StringType,true)))
+        val df = spark.createDataFrame(rdd,schema)
+
+## WithColumn
+    val df = List(("joao"),("gabriel")).toDF("first_name")
+    val df2 = df.withColumn("greeting",lit("HEY!"))
+
+## StructType
+    val data = Seq( Row(20.0, "dog"), Row(3.5, "cat"), Row(0.000006, "ant") )
+    val schema = StructType(  List(StructField("weight", DoubleType, true),StructField("animal_type", StringType, true)  ))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data),schema)
+    val actualDF = df.withColumn("animal_interpretation",
+                        struct(
+                                (col("weight") > 5).as("is_large_animal"),
+                                 col("animal_type").isin("rat", "cat", "dog").as("is_mammal"))
+                                )
+    actualDF.show(truncate = false)
+    actualDF.select(col("animal_type"),
+                    col("animal_interpretation")("is_large_animal").as("is_large_animal"),
+                    col("animal_interpretation")("is_mammal").as("is_mammal"))
+                    .show(truncate = false)
+
+## Array and When
+        val df = Seq( ("i like blue and red"), ("you pink and blue")).toDF("word1")
+            val actualDF = df.withColumn("colors",array(
+                                                    when(col("word1").contains("blue"), "blue"),
+                                                    when(col("word1").contains("red"), "red"),
+                                                    when(col("word1").contains("pink"), "pink"),
+                                                    when(col("word1").contains("cyan"), "cyan")
+                                                    )
+                                        )
+
+            actualDF.show(truncate = false)
+
+# Run on a YARN cluster
+    export HADOOP_CONF_DIR=XXX
+        ./bin/spark-submit \
+        --class org.apache.spark.examples.SparkPi \
+        --master yarn \
+        --deploy-mode cluster \  # can be client for client mode
+        --executor-memory 20G \
+        --num-executors 50 \
+        /path/to/examples.jar \
+        1000
