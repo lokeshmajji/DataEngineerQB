@@ -187,3 +187,9 @@ Hive:
         jdbcDF.write
             .option("createTableColumnTypes", "name CHAR(64), comments VARCHAR(1024)")
             .jdbc("jdbc:postgresql:dbserver", "schema.tablename", connectionProperties)
+
+## Reading Multiple Files and Finding and Sorting WordCount
+    val rdd = sc.wholeTextFiles("/user/cloudera/dataset/dataset")
+    rdd.map(x => (x._1,x._2.split("\\s+").toList.count(y => y.contains("Hadoop")))).collect.foreach(println)
+
+## 

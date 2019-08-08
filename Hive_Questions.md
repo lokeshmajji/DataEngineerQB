@@ -11,7 +11,8 @@
         insert overwrite table p_patient1 partition(drug='metacin') select patient_id, patient_name, gender, total_amount from patient where drug='metacin';
 
         SET hive.exec.dynamic.partition=true;
-        SET hive.exec.dynamic.partition.mode=non-strict;
+        SET hive.exec.dynamic.partition.mode=nonstrict;
+        
         create table dynamic_partition_patient (patient_id int,patient_name string, gender string, total_amount int) partitioned by (drug string);
         insert into table dynamic_partition_patient PARTITION(drug) select * from patient1;
 
@@ -86,3 +87,30 @@ On the contrary, in case of an external table, Hive just deletes the metadata in
 
 
 
+## Write Hive Query Output to Directory
+                INSERT OVERWRITE LOCAL DIRECTORY '/home/hadoop/yourTableDir'
+                ROW FORMAT DELIMITED
+                FILEDS TERMINATED BY '\t'
+                STORED AS TEXTFILE
+                SELECT * FROM employees where salary > 50000
+
+                INSERT OVERWRITE DIRECTORY '/home/hadoop/yourTableDir'
+                ROW FORMAT DELIMITED
+                FILEDS TERMINATED BY '\t'
+                STORED AS TEXTFILE
+                SELECT * FROM employees where salary > 50000
+
+
+## Incremental Load in Hive
+                CREATE VIEW reconcile_view AS
+                SELECT t1.* FROM
+                (SELECT * FROM base_table
+                UNION ALL
+                SELECT * from incremental_table) t1
+                JOIN
+                (SELECT id, max(modified_date) max_modified FROM
+                        (SELECT * FROM base_table
+                        UNION ALL
+                        SELECT * from incremental_table)
+                GROUP BY id) t2
+                ON t1.id = t2.id AND t1.modified_date = t2.max_modified;
