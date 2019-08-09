@@ -244,3 +244,43 @@ Hive:
         --num-executors 50 \
         /path/to/examples.jar \
         1000
+
+## Spark Optimizations
+### Tuning In Code  
+* ReduceByKey or groupByKey 
+* Maintain the required size of the shuffle blocks 
+* File Formats and Delimiters
+* Broadcasting Small data files 
+* Monitoring of Job tasks
+* ByKey, repartition or any other operations which trigger shuffles
+
+### Tuning System
+* Data Serialization
+* Tuning Data Structures
+    * Design your data structures to prefer arrays of objects, and primitive types, instead of the standard Java or Scala collection classes (e.g. HashMap).
+    * Consider using numeric IDs or enumeration objects instead of strings for keys.
+    * Avoid nested structures with a lot of small objects and pointers when possible.
+* Serialized RDD Storage
+* Garbage Collection Tuning :Try the G1GC garbage collector with -XX:+UseG1GC. It can improve performance in some situations where garbage collection is a bottleneck. 
+* Level of Parallelism: spark.default.parallelism
+* Broadcasting Large Variables
+* Data Locality
+    PROCESS_LOCAL data is in the same JVM as the running code. This is the best locality possible
+    NODE_LOCAL data is on the same node. Examples might be in HDFS on the same node, or in another executor on the same node. This is a little slower than PROCESS_LOCAL because the data has to travel between processes
+    NO_PREF data is accessed equally quickly from anywhere and has no locality preference
+    RACK_LOCAL data is on the same rack of servers. Data is on a different server on the same rack so needs to be sent over the network, typically through a single switch
+    ANY data is elsewhere on the network and not in the same rack
+
+## Best Practices of Hadoop File Storage
+  Here are some significant benefits of choosing an appropriate file format –
+        Faster read times
+        Faster write times
+        Splittable files
+        Schema evolution support
+        Advanced compression support
+## When to use a File Format
+    When the need to accessing an only a small subset of columns then used a columnar data format.
+    When necessary to obtaining many columns then used a row-oriented database instead of a columnar database.
+    If schema changes over time then use Avro instead of ORC or Parquet.
+    If need to perform query then use ORC or Parquet instead of Avro.
+    If need to perform column add operation then use Parquet instead of ORC.

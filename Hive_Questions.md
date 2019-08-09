@@ -114,3 +114,26 @@ On the contrary, in case of an external table, Hive just deletes the metadata in
                         SELECT * from incremental_table)
                 GROUP BY id) t2
                 ON t1.id = t2.id AND t1.modified_date = t2.max_modified;
+
+## Hive Tuning Techniques
+* Execution Engine : Use Tez instead of MR
+* Usage of suitable file format : ORC or Parquet
+* By partitioning : Dividing data into folder
+* Use of bucketing : Dividing data into manageable parts
+* Use of vectorization : Vectorized query execution improves performance of operations like scans, aggregations, filters and joins, by performing them in batches of 1024 rows at once instead of single row each time.
+
+        set hive.vectorized.execution = true;
+        set hive.vectorized.execution.enabled = true;
+
+* Cost based optimization : Hive, CBO, performs further optimizations based on query cost, resulting in potentially different decisions: how to order joins, which type of join to perform, degree of parallelism and others.
+        set hive.cbo.enable=true;
+        set hive.compute.query.using.stats=true;
+        set hive.stats.fetch.column.stats=true;
+        set hive.stats.fetch.partition.stats=true;
+        
+        Then, prepare the data for CBO by running Hive’s “analyze” command to collect various statistics on the tables for which we want to use CBO.
+        ANALYZE TABLE test1 COMPUTE STATISTICS;
+
+* Use of indexing :
+        The major advantage of using indexing is; whenever we perform a query on a table that has an index, there is no need for the query to scan all the rows in the table. Further, it checks the index first and then goes to the particular column and performs the operation.
+* execute.parallerl = true
