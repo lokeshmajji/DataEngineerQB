@@ -26,5 +26,5 @@ This project has been aimed at effecitve utilization of space in one of the majo
 
 
 
-## Learnig
+## Learning
 https://www.pluralsight.com/courses/hive-complex-analytical-queries

@@ -242,6 +242,8 @@ Hive:
         --deploy-mode cluster \  # can be client for client mode
         --executor-memory 20G \
         --num-executors 50 \
+        --conf 
+        --jars 
         /path/to/examples.jar \
         1000
 
