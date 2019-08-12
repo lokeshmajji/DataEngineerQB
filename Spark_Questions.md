@@ -248,13 +248,14 @@ Hive:
         1000
 
 ## Spark Optimizations
-### Tuning In Code  
-* ReduceByKey or groupByKey 
-* Maintain the required size of the shuffle blocks 
-* File Formats and Delimiters
-* Broadcasting Small data files 
-* Monitoring of Job tasks
-* ByKey, repartition or any other operations which trigger shuffles
+
+### Tuning In Code 
+    * ReduceByKey or groupByKey 
+    * Maintain the required size of the shuffle blocks 
+    * File Formats and Delimiters
+    * Broadcasting Small data files 
+    * Monitoring of Job tasks
+    * ByKey, repartition or any other operations which trigger shuffles
 
 ### Tuning System
 * Data Serialization
